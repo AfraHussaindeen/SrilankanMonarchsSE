@@ -1,0 +1,184 @@
+# Get the entire records of monarchs
+GET monarchs/_search
+
+#......................................................
+
+# Perform general term search
+GET monarchs/_search
+{
+  "query": {
+      "multi_match": {
+          "query": "උපතිස්ස නුවර ",
+          "fields": [
+              "name^4",
+              "detail^2",
+              "spouse^2",
+              "kingdom^2",
+              "dynasty^2",
+              "predecessor",
+              "successor"
+          ]
+      }
+  }
+}
+
+#......................................................
+
+GET monarchs/_search
+{
+  "query": {
+      "multi_match": {
+          "query": "අභය  පඞුවස්දෙව්",
+          "fields": [
+              "name^4",
+              "detail^2",
+              "spouse^2",
+              "kingdom^2",
+              "dynasty^2",
+              "predecessor",
+              "successor"
+          ],
+          "operator" : "and"
+      }
+  }
+}
+
+#......................................................
+
+# Get the number of monarchs from each kingdom 
+# Raw query : "විවිධ රාජධානි වලට අයත් පාලකයන් ගණන"
+GET monarchs/_search
+{
+  "size":0,
+  "aggs": {
+      "kingdom_filter": {
+          "terms": {
+              "field": "kingdom.keyword",
+              "size":30
+            
+          }
+      }
+  }
+}
+
+#......................................................
+
+# Get the number of monarchs from each kingdom and dynasty
+# Raw query : "විවිධ රාජවංශ වලට අයත් පාලකයන් ගණන"
+GET monarchs/_search
+{
+  "size":0,
+  "aggs": {
+      "dynasty_filter": {
+          "terms": {
+              "field": "dynasty.keyword",
+              "size":30
+          }
+      }
+  }
+}   
+
+#......................................................
+
+# Get the details of the monarch with the given name
+GET monarchs/_search
+{
+"query":{
+  "match" :{
+    "name" : "විජය කුමාර"}
+  }
+}
+
+#......................................................
+
+# Get all the monarchs ruled the country in the specified time period (range query)
+# Raw query : "ක්රි.පූ.543 සිට ක්රි.පූ.204 දක්වා පාලකයන් "
+GET monarchs/_search   
+{
+   "query": {
+       "range" : {
+           "reign_start" : {
+               "gte" : -543,
+               "lte" :  -204
+           }
+       }
+   }
+}
+
+#......................................................
+
+# Allow wildcard queries (single term)
+# If the exact name of the king is unknown
+GET monarchs/_search      
+{
+  "query": {
+    "wildcard": {
+      "name": {
+        "value": "විජ*"
+      }
+    }
+  }
+}
+
+#......................................................
+
+# Perform phrase search
+# Raw query : "ලංකාවට පැමිණි ආක්රමණිකයෙකි"
+GET monarchs/_search 
+{
+  "query": {
+    "query_string": {
+      "query": "\"ලංකාවට පැමිණි ආක්රමණිකයෙකි\"" ,
+      "fields" : [ "name^3", "detail^2", "spouse^2","predecessor","successor","kingdom^2","dynasty^2" ]
+    }
+  }
+}
+
+#......................................................
+
+#  For advance search 
+GET monarchs/_search 
+{
+  "query":{
+    "bool":{
+      "must":{
+        "match":{
+          "name": "විජය"
+        }
+      },
+      "filter": [
+        {
+          "multi_match":{
+            "query": "අනුරාධපුර",
+            "fields":[
+              "detail","spouse","kingdom","dynasty"
+              ]
+            
+          }
+        }
+      ],
+      "must_not": {
+        "term":{
+          "name" : "රාජසිංහ"
+        }
+      },
+      "should":{
+        "multi_match" : {
+          "query" : "ලම්බකර්ණ",
+          "fields": ["detail","spouse","kingdom","dynasty"]
+        }
+      }
+      
+    }
+  }
+}
+
+#......................................................
+
+# To check how the stemmer works 
+GET monarchs/_analyze 
+{
+  "analyzer" : "sin_search_analyzer",
+  "text": "විජය රජු ලංකාවට පැමිණි ආක්රමණිකයෙකි"
+  
+}
