@@ -70,17 +70,19 @@ Finally , you can access the web app via  http://localhost:5000/.
  </br>
  
 ## Data 
-The [Wikipedia](https://en.wikipedia.org/wiki/List_of_Sri_Lankan_monarchs#Anuradhapura_Kingdom_(437_BC_%E2%80%93_1017_AD)) website was used to gather information about monarchs. Both manual and automated web scraping stratergies were used. For automatic web scraping [Web Scraper - Free Web Scraping](https://chrome.google.com/webstore/detail/web-scraper-free-web-scra/jnhgnonknehpejjnehehllkliplmbmhn?hl=en), chrome extension was used. Below are the considered data fields.
 
-* name
-* detail
-* spouse
-* kingdom
-* dynasty
-* reign_start
-* reign_end
-* predecessor
-* successor
+Wikipedia [Wikipedia](https://en.wikipedia.org/wiki/List_of_Sri_Lankan_monarchs#Anuradhapura_Kingdom_(437_BC_%E2%80%93_1017_AD))  was used to collect informations of 189 monarchs. Both manual and automated web scraping stratergies were used. For automatic web scraping [Web Scraper - Free Web Scraping](https://chrome.google.com/webstore/detail/web-scraper-free-web-scra/jnhgnonknehpejjnehehllkliplmbmhn?hl=en), chrome extension was used. 
+
+Considered data fields are : 
+* name (stritextng)
+* detail (text)
+* spouse (text)
+* kingdom (text)
+* dynasty (text)
+* reign_start (number)
+* reign_end (number)
+* predecessor (text)
+* successor (text)
 
 
  </br>
@@ -153,62 +155,34 @@ Settings = {
 }
 
 ```
+Seperate custom analyzers are  used each for indexing time and querying time. Both custom analyzers comprised of,
 
-Here custom analyzers are used with ```icu_tokenizer``` and few other filters such as ```punctuation filter```, ```stop word filter``` , ```synonym filter``` ,  ```sin stemmer``` and etc.
-</br>
-* ICU_tokenizer 
+* <b>ICU-tokenizer</b> - Behaves much like a standard tokenizer, buts adds better support for Asian languages.
+* <b>Punctuation filter</b> - Removes a selected set of punctuations that assume to be generally found in user queries.
+* <b>Stopword filter</b> - Removes the [stopwords](https://github.com/nlpcuom/Sinhala-Stopword-list) as it doesn’t provide any specific meaning to the search in the considered context
+* <b>Synonym filter</b> - Reduce the number of varied indexed and as a result boost efficient indexing and searching
+* <b>Stemmer</b> - Provides the stems of the word. Hunspell - spell checker was used.
 
-Tokenizes text into words on word boundaries, as defined in [UAX #29: Unicode Text Segmentation](https://www.unicode.org/reports/tr29/). It behaves much like the standard tokenizer, but adds better support for some Asian languages by using a dictionary-based approach.
-
-* Punctuation filter
-
-Removes a selected set of punctuations that assume to be generally found in user queries. 
-
-* Stop word filter
-
-Used to remove the [stopwords](https://github.com/nlpcuom/Sinhala-Stopword-list) as it doesn't provide any specific meaning to the search in the consuderes context. 
-
-* Synonym filter
-
-Used to reduce the number of varied indexes and hence can boost efficient indexing and searching. 
-
-* Stemmer 
-
-Hunspell - Spell checker and morphological analyzer library is used.
+Apart from the above components, “Edge n-gram filter” is used for indexing analyzers. This filter is generally used to support search-as-you-type queries. But the initially implemented web app is not designed to support this.
 
  </br>
 
 ## Features
 
-* Text preprocessing 
-
-Use ICU-Tokenizer and few other filters as mentioned above.
-
-* Rule-based classification
-
-A simple rule-based classification is used to identify the intent of the user such as, basic search, exact phrase search, range search and etc.
-
-* Synonym support
-
-A customized analyzer is defined to handle synonyms. "රජ,රජතුමා,නායකයා,නායකතුමා,පාලකයා,නරේන්ද්‍ර,නරපති,මහීපාල,නරදෙව්, භූපති  => රජු" is an example.
-
-* Withstand simple spelling erros.
-
-Úse of wild card queries allow the users to search even if they misspell words. For an example when a user isn't sure what the complete name of a king (ex : සූරතිස්ස ), user can use "සූර*"
-
-* Boosting 
-
-For query optimization a boosting technique is used by assigning a predefined weight for each field.
+* <b>Text preprocessing</b>  - ICU-tokenizer and a few other filters as mentioned above are used
+* <b>Rule-based classification</b>  - Used to identify the user intent such as , basic search, range search, etc.
+* <b>Synonym support</b>  - Used to handle synonyms such as "රජ,රජතුමා,නායකයා,නායකතුමා,පාලකයා,නරේන්ද්‍ර,නරපති,මහීපාල,නරදෙව්, භූපති  => රජු" 
+* <b>Withstand simple spelling erros </b> - Úse wild card queries allow the users to search even if they misspell words. For an example when a user isn't sure what the complete name of a king (ex : සූරතිස්ස ), user can use "සූර*"
+* <b>Boosting </b> - Used for query optimization by assigning a predefined weight for each field.
 
 </br>
 
 ## Queries supported (Samples)
 
 *  Match query
-```
-# Get the details of the monarch restricting the search space to the specified field.
-# Raw query : නම : විජය කුමාර
+Used to search by the name of the monarch, spouse, kingdom, dynasty, predecessor, and successor specifying the field name (ex => නම : විජය කුමාර )
 
+```
 GET monarchs/_search
 {
 "query":{
@@ -218,10 +192,10 @@ GET monarchs/_search
 }
 
 ```
+
 *  Multi match query
+Used to search by terms where the  term can be in any of the specified set of fields. (ex=> අභය  පඞුවස්දෙව් )
 ```
-# Get the records which include any of the terms  in any field.
-# Raw query : අභය  පඞුවස්දෙව්
 
 GET monarchs/_search
 {
@@ -241,10 +215,10 @@ GET monarchs/_search
   }
 }
 ```
+
 *  Wildcard query
+Used to search the details when the exact name of the king is unknown.
 ```
-# If the exact name of the king is unknown
-# Raw query : විජ*
 
 GET monarchs/_search      
 {
@@ -257,10 +231,12 @@ GET monarchs/_search
   }
 }
 ```
+
 *  Exact match query
+Used to search by a fixed phrase where the phrase can be in any of the specified set of fields (ex => “වීර පරාක්රම නරේන්ද්රසිංහ” )
+
 ```
-# Get the records that have the same phrase in any of the specified field
-# Raw query : "වීර පරාක්රම නරේන්ද්රසිංහ"
+
 
 GET monarchs/_search 
 {
@@ -272,11 +248,11 @@ GET monarchs/_search
   }
 }
 ```
-*  Aggregated query
-```
-# Get the number of monarchs from each kingdom 
-# Raw query : "විවිධ රාජධානි වලට අයත් පාලකයන් ගණන"
 
+*  Aggregated query
+Used to get the number of monarchs when grouped by the kingdom and dynasty (ex => විවිධ රාජධානි වලට අයත් පාලකයන් ගණන )
+
+```
 GET monarchs/_search
 {
   "size":0,
@@ -291,10 +267,10 @@ GET monarchs/_search
   }
 }
 ```
+
 *  Range query
+Used to extract the monarchs who ruled the kingdom in the specified time (ex => ක්රි.පූ.543 සිට ක්රි.පූ.204 දක්වා පාලකයන්)
 ```
-# Get the monarchs who ruled the country in the specified time period 
-# Raw query : "ක්රි.පූ.543 සිට ක්රි.පූ.204 දක්වා පාලකයන්"
 
 GET monarchs/_search   
 {
@@ -308,6 +284,7 @@ GET monarchs/_search
    }
 }
 ```
+
 *  Boolean query (Initial web app doesn't support this)
 ```
 # Get the monarchs whose name include "විජය" while excluding "රාජසිංහ"
